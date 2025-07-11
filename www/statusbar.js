@@ -48,15 +48,15 @@ var namedColors = {
  * @param {Function} errorCallback - Optional error callback
  * @returns {*} - Return value from success callback if provided
  */
-function execStatusBarCommand(action, args, successCallback, errorCallback) {
+function execStatusBarCommand (action, args, successCallback, errorCallback) {
     return exec(
-        function(result) {
+        function (result) {
             if (typeof successCallback === 'function') {
                 return successCallback(result);
             }
             return result;
         },
-        function(error) {
+        function (error) {
             if (typeof errorCallback === 'function') {
                 errorCallback(error);
             }
@@ -72,32 +72,32 @@ function execStatusBarCommand(action, args, successCallback, errorCallback) {
  * @param {string} action - The action to execute
  * @param {Array} args - Arguments for the action
  */
-function execSimpleCommand(action, args) {
+function execSimpleCommand (action, args) {
     exec(null, null, 'StatusBar', action, args || []);
 }
 
 var StatusBar = {
     isVisible: true,
 
-    overlaysWebView: function(doOverlay) {
+    overlaysWebView: function (doOverlay) {
         execSimpleCommand('overlaysWebView', [doOverlay]);
     },
 
-    styleDefault: function() {
+    styleDefault: function () {
         // dark text (to be used on a light background)
         execSimpleCommand('styleDefault');
     },
 
-    styleLightContent: function() {
+    styleLightContent: function () {
         // light text (to be used on a dark background)
         execSimpleCommand('styleLightContent');
     },
 
-    backgroundColorByName: function(colorname) {
+    backgroundColorByName: function (colorname) {
         return StatusBar.backgroundColorByHexString(namedColors[colorname]);
     },
 
-    backgroundColorByHexString: function(hexString) {
+    backgroundColorByHexString: function (hexString) {
         if (hexString.charAt(0) !== '#') {
             hexString = '#' + hexString;
         }
@@ -110,12 +110,12 @@ var StatusBar = {
         execSimpleCommand('backgroundColorByHexString', [hexString]);
     },
 
-    hide: function() {
+    hide: function () {
         execSimpleCommand('hide');
         StatusBar.isVisible = false;
     },
 
-    show: function() {
+    show: function () {
         execSimpleCommand('show');
         StatusBar.isVisible = true;
     },
@@ -127,27 +127,27 @@ var StatusBar = {
      * @param {Function} errorCallback - Error callback
      * @returns {*} - Return value from success callback
      */
-    getHeight: function(elementType, successCallback, errorCallback) {
+    getHeight: function (elementType, successCallback, errorCallback) {
         return execStatusBarCommand(elementType, [], successCallback, errorCallback);
     },
 
-    getNavigationBarHeight: function(successCallback, errorCallback) {
+    getNavigationBarHeight: function (successCallback, errorCallback) {
         return StatusBar.getHeight('getNavigationBarHeight', successCallback, errorCallback);
     },
 
-    getStatusBarHeight: function(successCallback, errorCallback) {
+    getStatusBarHeight: function (successCallback, errorCallback) {
         return StatusBar.getHeight('getStatusBarHeight', successCallback, errorCallback);
     },
 
-    getTotalScreenHeight: function(successCallback, errorCallback) {
+    getTotalScreenHeight: function (successCallback, errorCallback) {
         return StatusBar.getHeight('getTotalScreenHeight', successCallback, errorCallback);
     }
 };
 
 // prime it. setTimeout so that proxy gets time to init
-window.setTimeout(function() {
+window.setTimeout(function () {
     exec(
-        function(res) {
+        function (res) {
             if (typeof res === 'object') {
                 if (res.type === 'tap') {
                     cordova.fireWindowEvent('statusTap');
