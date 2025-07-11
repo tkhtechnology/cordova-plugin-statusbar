@@ -148,7 +148,7 @@ static const void *kStatusBarStyle = &kStatusBarStyle;
     } else {
         [self webViewScrollView].scrollsToTop = NO;
     }
- 
+
     // blank scroll view to intercept status bar taps
     UIScrollView *fakeScrollView = [[UIScrollView alloc] initWithFrame:UIScreen.mainScreen.bounds];
     fakeScrollView.delegate = self;
@@ -454,7 +454,7 @@ static const void *kStatusBarStyle = &kStatusBarStyle;
     }
     frame.size.height -= frame.origin.y;
     self.webView.frame = frame;
-    
+
 }
 
 - (void) dealloc
@@ -481,6 +481,64 @@ static const void *kStatusBarStyle = &kStatusBarStyle;
 {
     [self fireTappedEvent];
     return NO;
+}
+
+#pragma mark - Height Measurement Methods
+
+- (void) getStatusBarHeight:(CDVInvokedUrlCommand*)command
+{
+    CGFloat statusBarHeight = [UIApplication sharedApplication].statusBarFrame.size.height;
+
+    if (@available(iOS 11.0, *)) {
+        UIWindow *window = UIApplication.sharedApplication.keyWindow;
+        CGFloat topPadding = window.safeAreaInsets.top;
+
+        if (topPadding > 20) {
+            statusBarHeight = topPadding;
+        }
+    }
+
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDouble:statusBarHeight];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+}
+
+- (void) getNavigationBarHeight:(CDVInvokedUrlCommand*)command
+{
+    CGFloat navigationBarHeight = 0;
+
+    if ([self.viewController isKindOfClass:[UINavigationController class]]) {
+        UINavigationController *navController = (UINavigationController *)self.viewController;
+        navigationBarHeight = navController.navigationBar.frame.size.height;
+    } else if (self.viewController.navigationController) {
+        navigationBarHeight = self.viewController.navigationController.navigationBar.frame.size.height;
+    } else {
+        navigationBarHeight = 44.0; // Standard navigation bar height
+
+        if (@available(iOS 11.0, *)) {
+            UIWindow *window = UIApplication.sharedApplication.keyWindow;
+            if (window.safeAreaInsets.top > 20) {
+                navigationBarHeight = 44.0; // Still 44 for navigation bar itself, excluding status bar
+            }
+        }
+    }
+
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDouble:navigationBarHeight];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
+}
+
+- (void) getTotalScreenHeight:(CDVInvokedUrlCommand*)command
+{
+    CGFloat screenHeight = 0;
+
+    CGRect screenBounds = [[UIScreen mainScreen] bounds];
+    screenHeight = screenBounds.size.height;
+
+    if (@available(iOS 11.0, *)) {
+        UIWindow *window = UIApplication.sharedApplication.keyWindow;
+    }
+
+    CDVPluginResult* result = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsDouble:screenHeight];
+    [self.commandDelegate sendPluginResult:result callbackId:command.callbackId];
 }
 
 @end

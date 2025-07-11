@@ -40,28 +40,64 @@ var namedColors = {
     brown: '#A52A2A'
 };
 
+/**
+ * Helper function to execute cordova commands
+ * @param {string} action - The action to execute
+ * @param {Array} args - Arguments for the action
+ * @param {Function} successCallback - Optional success callback
+ * @param {Function} errorCallback - Optional error callback
+ * @returns {*} - Return value from success callback if provided
+ */
+function execStatusBarCommand(action, args, successCallback, errorCallback) {
+    return exec(
+        function(result) {
+            if (typeof successCallback === 'function') {
+                return successCallback(result);
+            }
+            return result;
+        },
+        function(error) {
+            if (typeof errorCallback === 'function') {
+                errorCallback(error);
+            }
+        },
+        'StatusBar',
+        action,
+        args || []
+    );
+}
+
+/**
+ * Simple command execution without callbacks
+ * @param {string} action - The action to execute
+ * @param {Array} args - Arguments for the action
+ */
+function execSimpleCommand(action, args) {
+    exec(null, null, 'StatusBar', action, args || []);
+}
+
 var StatusBar = {
     isVisible: true,
 
-    overlaysWebView: function (doOverlay) {
-        exec(null, null, 'StatusBar', 'overlaysWebView', [doOverlay]);
+    overlaysWebView: function(doOverlay) {
+        execSimpleCommand('overlaysWebView', [doOverlay]);
     },
 
-    styleDefault: function () {
-        // dark text ( to be used on a light background )
-        exec(null, null, 'StatusBar', 'styleDefault', []);
+    styleDefault: function() {
+        // dark text (to be used on a light background)
+        execSimpleCommand('styleDefault');
     },
 
-    styleLightContent: function () {
-        // light text ( to be used on a dark background )
-        exec(null, null, 'StatusBar', 'styleLightContent', []);
+    styleLightContent: function() {
+        // light text (to be used on a dark background)
+        execSimpleCommand('styleLightContent');
     },
 
-    backgroundColorByName: function (colorname) {
+    backgroundColorByName: function(colorname) {
         return StatusBar.backgroundColorByHexString(namedColors[colorname]);
     },
 
-    backgroundColorByHexString: function (hexString) {
+    backgroundColorByHexString: function(hexString) {
         if (hexString.charAt(0) !== '#') {
             hexString = '#' + hexString;
         }
@@ -71,24 +107,47 @@ var StatusBar = {
             hexString = '#' + split[1] + split[1] + split[2] + split[2] + split[3] + split[3];
         }
 
-        exec(null, null, 'StatusBar', 'backgroundColorByHexString', [hexString]);
+        execSimpleCommand('backgroundColorByHexString', [hexString]);
     },
 
-    hide: function () {
-        exec(null, null, 'StatusBar', 'hide', []);
+    hide: function() {
+        execSimpleCommand('hide');
         StatusBar.isVisible = false;
     },
 
-    show: function () {
-        exec(null, null, 'StatusBar', 'show', []);
+    show: function() {
+        execSimpleCommand('show');
         StatusBar.isVisible = true;
+    },
+
+    /**
+     * Gets the height of various UI elements
+     * @param {string} elementType - The element type to get height for
+     * @param {Function} successCallback - Success callback
+     * @param {Function} errorCallback - Error callback
+     * @returns {*} - Return value from success callback
+     */
+    getHeight: function(elementType, successCallback, errorCallback) {
+        return execStatusBarCommand(elementType, [], successCallback, errorCallback);
+    },
+
+    getNavigationBarHeight: function(successCallback, errorCallback) {
+        return StatusBar.getHeight('getNavigationBarHeight', successCallback, errorCallback);
+    },
+
+    getStatusBarHeight: function(successCallback, errorCallback) {
+        return StatusBar.getHeight('getStatusBarHeight', successCallback, errorCallback);
+    },
+
+    getTotalScreenHeight: function(successCallback, errorCallback) {
+        return StatusBar.getHeight('getTotalScreenHeight', successCallback, errorCallback);
     }
 };
 
 // prime it. setTimeout so that proxy gets time to init
-window.setTimeout(function () {
+window.setTimeout(function() {
     exec(
-        function (res) {
+        function(res) {
             if (typeof res === 'object') {
                 if (res.type === 'tap') {
                     cordova.fireWindowEvent('statusTap');

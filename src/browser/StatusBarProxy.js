@@ -40,7 +40,10 @@ module.exports = {
     backgroundColorByHexString: notSupported,
     hide: notSupported,
     show: notSupported,
-    _ready: notSupported
+    _ready: notSupported,
+    getNavigationBarHeight: notSupported,
+    getStatusBarHeight: notSupported,
+    getTotalScreenHeight: notSupported
 };
 
 require('cordova/exec/proxy').add('StatusBar', module.exports);
