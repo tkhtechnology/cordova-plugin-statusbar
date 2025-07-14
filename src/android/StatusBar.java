@@ -19,12 +19,14 @@
  */
 package org.apache.cordova.statusbar;
 
-import android.app.Activity;
+import android.content.res.Resources;
 import android.graphics.Color;
-import android.graphics.Rect;
 import android.os.Build;
 import android.util.DisplayMetrics;
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
@@ -275,6 +277,38 @@ public class StatusBar extends CordovaPlugin {
         }
     }
 
+    private boolean isEdgeToEdge() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            View decorView = window.getDecorView();
+            int uiOptions = decorView.getSystemUiVisibility();
+
+            // Check for flags that indicate edge-to-edge mode
+            boolean hasLayoutFullscreen = (uiOptions & View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN) != 0;
+            boolean hasLayoutHideNavigation = (uiOptions & View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION) != 0;
+            boolean hasImmersiveFlag = (uiOptions & View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY) != 0
+                || (uiOptions & View.SYSTEM_UI_FLAG_IMMERSIVE) != 0;
+
+            // Check window flags
+            boolean hasTranslucentStatus = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS) != 0;
+            boolean hasTranslucentNavigation = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION) != 0;
+            boolean hasLayoutNoLimits = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS) != 0;
+
+            boolean drawSystemBarBackgrounds = (window.getAttributes().flags & WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS) != 0;
+            int statusBarColor = window.getStatusBarColor();
+            int navBarColor = window.getNavigationBarColor();
+
+            // Check if status bar or nav bar has transparency
+            boolean hasTransparentBars = drawSystemBarBackgrounds &&
+                (Color.alpha(statusBarColor) < 255 || Color.alpha(navBarColor) < 255);
+
+            // If any of these flags are set, we're likely in edge-to-edge mode
+            return hasLayoutFullscreen || hasLayoutHideNavigation || hasImmersiveFlag ||
+                hasTranslucentStatus || hasTranslucentNavigation || hasLayoutNoLimits ||
+                hasTransparentBars;
+        }
+        return true;
+    }
+
     /**
      * Gets window insets for API 30+ devices
      */
@@ -287,6 +321,24 @@ public class StatusBar extends CordovaPlugin {
     }
 
     /**
+     * Helper method to check if the device has a navigation bar.
+     *
+     * @return true if the device has a navigation bar, false otherwise
+     */
+    private boolean hasNavigationBar() {
+        Resources resources = activity.getResources();
+        int id = resources.getIdentifier("config_showNavigationBar", "bool", "android");
+        if (id > 0) {
+            return resources.getBoolean(id);
+        }
+
+        boolean hasMenuKey = ViewConfiguration.get(activity).hasPermanentMenuKey();
+        boolean hasBackKey = KeyCharacterMap.deviceHasKey(KeyEvent.KEYCODE_BACK);
+
+        return !hasMenuKey && !hasBackKey;
+    }
+
+    /**
      * Gets the bottom navigation bar height
      */
     private int getNavigationBarHeight() {
@@ -294,6 +346,12 @@ public class StatusBar extends CordovaPlugin {
             WindowInsets insets = getWindowInsets();
             if (insets != null) {
                 return insets.getInsetsIgnoringVisibility(WindowInsets.Type.navigationBars()).bottom;
+            }
+        } else {
+            Resources resources = activity.getResources();
+            int resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android");
+            if (resourceId > 0 && hasNavigationBar()) {
+                return resources.getDimensionPixelSize(resourceId);
             }
         }
         return 0;
@@ -307,6 +365,12 @@ public class StatusBar extends CordovaPlugin {
             WindowInsets insets = getWindowInsets();
             if (insets != null) {
                 return insets.getInsetsIgnoringVisibility(WindowInsets.Type.statusBars()).top;
+            }
+        } else if (isEdgeToEdge()) {
+            Resources resources = activity.getResources();
+            int resourceId = resources.getIdentifier("status_bar_height", "dimen", "android");
+            if (resourceId > 0) {
+                return resources.getDimensionPixelSize(resourceId);
             }
         }
         return 0;
