@@ -248,13 +248,33 @@ public class StatusBar extends CordovaPlugin {
      * Set the status bar transparency
      */
     private void setStatusBarTransparent(final boolean isTransparent) {
-        int visibility = isTransparent
-            ? View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            : View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE;
+        if (!isTransparent) {
+            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_VISIBLE);
+            return;
+        }
 
-        window.getDecorView().setSystemUiVisibility(visibility);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            WindowCompat.setDecorFitsSystemWindows(window, false);
+            window.setStatusBarColor(Color.TRANSPARENT);
+        }
+        else if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+            View decorView = window.getDecorView();
 
-        if (isTransparent) {
+            int flags = decorView.getSystemUiVisibility();
+            flags |= View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+            flags |= View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+            flags |= View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+            decorView.setSystemUiVisibility(flags);
+
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(Color.TRANSPARENT);
+
+            window.setNavigationBarColor(Color.TRANSPARENT);
+        }
+        else {
+            int visibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+            window.getDecorView().setSystemUiVisibility(visibility);
             window.setStatusBarColor(Color.TRANSPARENT);
         }
     }
@@ -347,7 +367,7 @@ public class StatusBar extends CordovaPlugin {
             if (insets != null) {
                 return insets.getInsetsIgnoringVisibility(WindowInsets.Type.navigationBars()).bottom;
             }
-        } else {
+        } else if (isEdgeToEdge()) {
             Resources resources = activity.getResources();
             int resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android");
             if (resourceId > 0 && hasNavigationBar()) {
